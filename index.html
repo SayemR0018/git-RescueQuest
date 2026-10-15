@@ -1,0 +1,24 @@
+<!doctype html>
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width,initial-scale=1'><title>Git Rescue Quest</title>
+<style>
+:root{--bg:#0f1117;--card:#171a22;--txt:#d8e0ff;--ok:#48d597;--bad:#ff6b81;--mut:#8f9bb3}*{box-sizing:border-box}body{margin:0;font:15px/1.4 ui-monospace,Consolas,monospace;background:radial-gradient(#1a2030,#0b0d13);color:var(--txt);min-height:100vh;display:grid;place-items:center}.card{width:min(760px,92vw);background:var(--card);border:1px solid #2a3142;border-radius:14px;padding:18px;box-shadow:0 10px 30px #0008}h1{margin:.1rem 0 .5rem;font-size:1.25rem}.top{display:flex;gap:12px;flex-wrap:wrap;color:var(--mut)}.bar{flex:1;min-width:180px;background:#111522;border-radius:20px;overflow:hidden;border:1px solid #2a3142}.hp{height:10px;background:linear-gradient(90deg,#f59e0b,var(--ok));width:100%;transition:.3s}.q{margin:12px 0 8px}.opts{display:grid;gap:8px}button{background:#22293a;color:#e7ecff;border:1px solid #33415e;padding:9px;border-radius:9px;text-align:left;cursor:pointer}button:hover{filter:brightness(1.1)}.out{display:none;margin-top:10px;padding:10px;border-radius:9px;border:1px solid #313b55;background:#101522;white-space:pre-wrap}.ok{color:var(--ok)}.bad{color:var(--bad)}.next{display:none;margin-top:10px}.small{color:var(--mut);font-size:.9em}
+</style></head><body><main class='card'>
+<h1>🧭 Git Rescue Quest</h1><div class='top'><div id='meta'></div><div class='bar'><div id='hp' class='hp'></div></div></div>
+<div id='scene'></div><div id='opts' class='opts'></div><div id='out' class='out'></div><button id='next' class='next'>Next Scenario ▶</button>
+</main><script>
+const lv=[
+{c:"You committed a .env secret locally (not pushed). What's safest?",o:["git reset --soft HEAD~1","git push --force","git rm .env"],a:0,w:"✅ Correct. --soft moves HEAD back one commit but keeps changes staged, so you can unstage/remove .env and recommit safely.",x:"❌ Wrong. This doesn't remove the leaked commit from local history before cleanup."},
+{c:"You're in detached HEAD with new commits you need to keep.",o:["git switch main","git switch -c rescue-branch","git reset --hard origin/main"],a:1,w:"✅ Correct. Creating a branch at detached HEAD preserves those commits under a named ref.",x:"❌ Wrong. You risk orphaning or discarding detached commits."},
+{c:"A hard reset nuked your last good commit. Recovery path?",o:["git reflog && git checkout <sha>","git clean -fd","git commit --amend"],a:0,w:"✅ Correct. reflog records prior HEADs; checkout that SHA (or branch from it) restores lost work.",x:"❌ Wrong. This doesn't locate/reset to the lost commit."},
+{c:"You pushed a bad commit to shared main; must avoid history rewrite.",o:["git reset --hard HEAD~1 && push --force","git revert HEAD","git rebase -i --root"],a:1,w:"✅ Correct. revert adds a new inverse commit, safe for shared history.",x:"❌ Wrong. This rewrites published history and can break collaborators."},
+{c:"Need one bugfix commit from another branch only.",o:["git merge feature","git cherry-pick <hash>","git pull origin feature"],a:1,w:"✅ Correct. cherry-pick applies exactly one selected commit without full branch merge.",x:"❌ Wrong. This pulls in extra history/changes you didn't ask for."}
+];
+let i=0,xp=0,h=100;const M=meta,S=scene,O=opts,OUT=out,N=next,HP=hp;
+const rank=s=>s>=90?"🏆 Git Guardian":s>=70?"🥇 Branch Defender":s>=50?"🥈 Commit Ranger":"🥉 Reflog Rookie";
+function render(){M.textContent=`Scenario ${Math.min(i+1,5)}/5  •  XP: ${xp}`;HP.style.width=h+"%";OUT.style.display="none";N.style.display="none";
+if(i>=lv.length){S.innerHTML=`<h2>Mission Complete</h2><p>Final XP: <b>${xp}</b> • Rank: <b>${rank(xp)}</b></p><p class='small'>Quick Reference:<br>1) git reset --soft HEAD~1<br>2) git switch -c rescue-branch<br>3) git reflog + git checkout &lt;sha&gt;<br>4) git revert HEAD<br>5) git cherry-pick &lt;hash&gt;</p>`;O.innerHTML="<button onclick='restart()'>Play Again ↻</button>";return}
+const q=lv[i];S.innerHTML=`<p class='q'><b>Level ${i+1} Crisis:</b> ${q.c}</p>`;O.innerHTML="";q.o.forEach((t,n)=>{const b=document.createElement("button");b.textContent=t;b.onclick=()=>pick(n);O.appendChild(b)});
+}
+function pick(n){const q=lv[i],ok=n===q.a;xp+=ok?20:5;h=Math.max(10,h-(ok?0:18));OUT.innerHTML=`<span class='${ok?"ok":"bad"}'>${ok?q.w:q.x}</span>\n\nTerminal Output & Explanation:\n${ok?"Command accepted. Disaster contained; repo integrity preserved.":"Command backfired. You introduced extra risk and did not properly recover."}`;OUT.style.display="block";N.style.display="inline-block";[...O.children].forEach(b=>b.disabled=true)}
+N.onclick=()=>{i++;render()};function restart(){i=0;xp=0;h=100;render()}render();
+</script></body></html>
