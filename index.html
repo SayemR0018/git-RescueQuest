@@ -1,0 +1,527 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Git Rescue Quest</title>
+  <style>
+    :root {
+      --bg: #0b1020;
+      --panel: #121a31;
+      --panel-2: #192443;
+      --text: #e9eefc;
+      --muted: #b7c3e6;
+      --good: #44d17b;
+      --warn: #f4c95d;
+      --bad: #ff6b6b;
+      --btn: #2a3d75;
+      --btn-hover: #3752a0;
+      --accent: #7aa2ff;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+      background: radial-gradient(circle at top, #16213f, var(--bg));
+      color: var(--text);
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      padding: 1rem;
+    }
+
+    .game {
+      width: min(920px, 100%);
+      background: linear-gradient(180deg, var(--panel), var(--panel-2));
+      border: 1px solid #2f447f;
+      border-radius: 18px;
+      box-shadow: 0 20px 45px rgba(0,0,0,.35);
+      overflow: hidden;
+    }
+
+    header {
+      padding: 1.2rem 1.25rem;
+      border-bottom: 1px solid #2f447f;
+      display: flex;
+      justify-content: space-between;
+      gap: 1rem;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(1.2rem, 2.6vw, 1.9rem);
+      letter-spacing: .3px;
+    }
+
+    .subtitle {
+      margin: .25rem 0 0;
+      color: var(--muted);
+      font-size: .95rem;
+    }
+
+    .stats {
+      display: flex;
+      gap: .7rem;
+      flex-wrap: wrap;
+    }
+
+    .pill {
+      background: #0e1631;
+      border: 1px solid #314885;
+      color: var(--muted);
+      padding: .35rem .65rem;
+      border-radius: 999px;
+      font-size: .85rem;
+      white-space: nowrap;
+    }
+
+    main { padding: 1.2rem; }
+
+    .card {
+      background: rgba(9, 14, 30, .55);
+      border: 1px solid #2b4178;
+      border-radius: 14px;
+      padding: 1rem;
+    }
+
+    .label {
+      color: var(--accent);
+      font-size: .8rem;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin: 0 0 .35rem;
+    }
+
+    .title {
+      margin: 0 0 .65rem;
+      font-size: clamp(1.05rem, 2.3vw, 1.4rem);
+    }
+
+    .story {
+      color: var(--text);
+      margin: 0;
+      line-height: 1.6;
+      white-space: pre-line;
+    }
+
+    .choices {
+      display: grid;
+      gap: .65rem;
+      margin-top: 1rem;
+    }
+
+    button.choice,
+    .actions button {
+      appearance: none;
+      border: 1px solid #4562b0;
+      background: var(--btn);
+      color: #eff3ff;
+      padding: .75rem .9rem;
+      border-radius: 10px;
+      text-align: left;
+      font-size: .95rem;
+      cursor: pointer;
+      transition: .15s ease;
+    }
+
+    button.choice:hover,
+    .actions button:hover {
+      background: var(--btn-hover);
+      transform: translateY(-1px);
+    }
+
+    .feedback {
+      margin-top: 1rem;
+      border-left: 4px solid #5877d1;
+      background: #101a37;
+      padding: .8rem .85rem;
+      border-radius: 8px;
+      color: var(--muted);
+      display: none;
+    }
+
+    .feedback.good { border-color: var(--good); }
+    .feedback.warn { border-color: var(--warn); }
+    .feedback.bad { border-color: var(--bad); }
+
+    .actions {
+      display: flex;
+      gap: .6rem;
+      margin-top: 1rem;
+      flex-wrap: wrap;
+    }
+
+    .actions button.secondary {
+      background: #1f2e58;
+      border-color: #415eac;
+    }
+
+    .footer-note {
+      color: var(--muted);
+      font-size: .85rem;
+      margin-top: .95rem;
+    }
+
+    code {
+      background: #0a1229;
+      color: #d8e3ff;
+      border: 1px solid #27407d;
+      border-radius: 5px;
+      padding: .05rem .3rem;
+      font-size: .88em;
+    }
+
+    @media (max-width: 640px) {
+      main { padding: .9rem; }
+      .card { padding: .85rem; }
+    }
+  </style>
+</head>
+<body>
+  <div class="game">
+    <header>
+      <div>
+        <h1>Git Rescue Quest</h1>
+        <p class="subtitle">Choose wisely. Recover your repo. Save release day.</p>
+      </div>
+      <div class="stats">
+        <span class="pill" id="scorePill">Score: 0</span>
+        <span class="pill" id="stepPill">Step: 1</span>
+        <span class="pill" id="streakPill">Rescues: 0</span>
+      </div>
+    </header>
+
+    <main>
+      <section class="card">
+        <p class="label" id="nodeType">Mission Brief</p>
+        <h2 class="title" id="nodeTitle"></h2>
+        <p class="story" id="nodeText"></p>
+
+        <div class="choices" id="choices"></div>
+
+        <div class="feedback" id="feedback"></div>
+
+        <div class="actions">
+          <button id="backBtn" class="secondary" type="button">Undo Last Choice</button>
+          <button id="restartBtn" type="button">Restart Quest</button>
+        </div>
+
+        <p class="footer-note">Learn by doing: each choice explains why the Git fix works (or fails).</p>
+      </section>
+    </main>
+  </div>
+
+  <script>
+    const nodes = {
+      start: {
+        type: "Mission Brief",
+        title: "Production Hotfix Panic",
+        text: "A critical bug is live. You rushed a fix and committed directly on your local feature branch, but CI says your history diverged from origin. What's your first move?",
+        choices: [
+          {
+            text: "Run `git status` and `git log --oneline --graph --decorate --all` to inspect state first",
+            to: "diverged_inspect",
+            score: 2,
+            rescue: true,
+            tone: "good",
+            feedback: "Correct. In Git disasters, inspection before action prevents making recovery harder."
+          },
+          {
+            text: "Force push immediately with `git push --force`",
+            to: "bad_forcepush",
+            score: -2,
+            tone: "bad",
+            feedback: "Risky. Force-pushing without inspecting can erase teammates' commits."
+          },
+          {
+            text: "Delete `.git` and re-clone to start over",
+            to: "bad_reclone",
+            score: -1,
+            tone: "warn",
+            feedback: "Heavy-handed. Re-cloning may hide understanding and lose local unpushed recovery context."
+          }
+        ]
+      },
+      diverged_inspect: {
+        type: "Incident",
+        title: "Diverged Branch",
+        text: "You discover: local has 2 commits not on origin; origin has 1 commit not local. Team policy says preserve history. What next?",
+        choices: [
+          {
+            text: "Use `git pull --rebase` to replay local commits on top of remote",
+            to: "rebase_conflict",
+            score: 2,
+            rescue: true,
+            tone: "good",
+            feedback: "Great choice. Rebase keeps history linear while preserving both sides."
+          },
+          {
+            text: "Merge origin into local with a merge commit",
+            to: "merge_ok",
+            score: 1,
+            rescue: true,
+            tone: "warn",
+            feedback: "Valid in many teams, though policy asked for preserving a cleaner linear history."
+          },
+          {
+            text: "Reset hard to origin and lose your local commits",
+            to: "bad_resetloss",
+            score: -2,
+            tone: "bad",
+            feedback: "Dangerous. `git reset --hard` discards local work unless you've backed it up."
+          }
+        ]
+      },
+      rebase_conflict: {
+        type: "Conflict",
+        title: "Rebase Conflict Detected",
+        text: "Rebase stops on `app.js` conflict. Your teammate's commit updated logging; yours updated error handling in nearby lines.",
+        choices: [
+          {
+            text: "Resolve conflict manually, run tests, then `git add .` and `git rebase --continue`",
+            to: "detached_head",
+            score: 2,
+            rescue: true,
+            tone: "good",
+            feedback: "Perfect. Conflict resolution + verification is the safe path."
+          },
+          {
+            text: "Abort rebase and keep retrying random commands",
+            to: "bad_loop",
+            score: -1,
+            tone: "warn",
+            feedback: "Without a plan, panic loops waste time and can create more confusion."
+          }
+        ]
+      },
+      merge_ok: {
+        type: "Aftermath",
+        title: "Merge Succeeded",
+        text: "You created a merge commit and code is preserved. CI now fails due to an accidental debug secret committed in `.env.example`.",
+        choices: [
+          {
+            text: "Rotate the leaked key, remove secret from history if needed, and commit sanitized file",
+            to: "finish_good",
+            score: 2,
+            rescue: true,
+            tone: "good",
+            feedback: "Excellent response. Leaked secrets require rotation, not just deletion from latest commit."
+          },
+          {
+            text: "Leave it for later since it's only in example files",
+            to: "bad_secret",
+            score: -2,
+            tone: "bad",
+            feedback: "Still risky. Any exposed credential-like value must be treated as compromised."
+          }
+        ]
+      },
+      detached_head: {
+        type: "Incident",
+        title: "Detached HEAD Surprise",
+        text: "After resolving conflicts, you checkout a commit to inspect history and now you're in detached HEAD with an extra fix commit.",
+        choices: [
+          {
+            text: "Create a safety branch (`git switch -c rescue-detached`) before moving away",
+            to: "reflog_recover",
+            score: 2,
+            rescue: true,
+            tone: "good",
+            feedback: "Great rescue. Branching preserves the detached commit from garbage collection."
+          },
+          {
+            text: "Switch back immediately and hope the commit stays",
+            to: "bad_lostcommit",
+            score: -2,
+            tone: "bad",
+            feedback: "Risky. Detached commits can become hard to find later without a named ref."
+          }
+        ]
+      },
+      reflog_recover: {
+        type: "Final Challenge",
+        title: "The Missing Commit Mystery",
+        text: "A teammate says they lost a commit after a bad reset. What's your rescue playbook?",
+        choices: [
+          {
+            text: "Use `git reflog` to find commit, then recover with `git cherry-pick` or branch reset",
+            to: "finish_good",
+            score: 3,
+            rescue: true,
+            tone: "good",
+            feedback: "Master move. `reflog` is the black box flight recorder for local refs."
+          },
+          {
+            text: "Tell them it's gone forever",
+            to: "bad_giveup",
+            score: -2,
+            tone: "bad",
+            feedback: "Usually false. Lost commits are often recoverable through reflog (unless cleaned)."
+          }
+        ]
+      },
+      finish_good: {
+        type: "Mission Complete",
+        title: "Repository Saved",
+        text: "You stabilized history, resolved conflicts responsibly, and recovered critical work. You're now the team's Git incident responder.",
+        ending: true
+      },
+      bad_forcepush: {
+        type: "Failure",
+        title: "History Rewrite Fallout",
+        text: "You force-pushed and erased remote commits. Team productivity stalls while they recover from backups.",
+        ending: true
+      },
+      bad_reclone: {
+        type: "Failure",
+        title: "Knowledge Lost",
+        text: "Re-cloning removed your context. You still need to understand the incident and local lost work is now hard to trace.",
+        ending: true
+      },
+      bad_resetloss: {
+        type: "Failure",
+        title: "Local Work Discarded",
+        text: "Reset removed your unpushed fixes. Recovery may still be possible with reflog, but time is lost.",
+        ending: true
+      },
+      bad_loop: {
+        type: "Failure",
+        title: "Command Spiral",
+        text: "Repeated abort/retry actions left the branch confusing. You must pause and inspect logs before continuing.",
+        ending: true
+      },
+      bad_secret: {
+        type: "Failure",
+        title: "Security Incident",
+        text: "Secret exposure triggered incident response. Delay increased blast radius.",
+        ending: true
+      },
+      bad_lostcommit: {
+        type: "Failure",
+        title: "Detached Commit Vanished",
+        text: "You moved away without creating a ref. Commit recovery now depends on reflog luck and timing.",
+        ending: true
+      },
+      bad_giveup: {
+        type: "Failure",
+        title: "Rescue Abandoned",
+        text: "The commit was actually recoverable through reflog, but the team re-implemented work from scratch.",
+        ending: true
+      }
+    };
+
+    const state = {
+      current: "start",
+      score: 0,
+      step: 1,
+      rescues: 0,
+      history: []
+    };
+
+    const nodeTypeEl = document.getElementById("nodeType");
+    const nodeTitleEl = document.getElementById("nodeTitle");
+    const nodeTextEl = document.getElementById("nodeText");
+    const choicesEl = document.getElementById("choices");
+    const feedbackEl = document.getElementById("feedback");
+    const scorePill = document.getElementById("scorePill");
+    const stepPill = document.getElementById("stepPill");
+    const streakPill = document.getElementById("streakPill");
+    const restartBtn = document.getElementById("restartBtn");
+    const backBtn = document.getElementById("backBtn");
+
+    function updateStats() {
+      scorePill.textContent = `Score: ${state.score}`;
+      stepPill.textContent = `Step: ${state.step}`;
+      streakPill.textContent = `Rescues: ${state.rescues}`;
+    }
+
+    function showFeedback(text, tone = "warn") {
+      feedbackEl.className = `feedback ${tone}`;
+      feedbackEl.textContent = text;
+      feedbackEl.style.display = "block";
+    }
+
+    function hideFeedback() {
+      feedbackEl.style.display = "none";
+      feedbackEl.textContent = "";
+      feedbackEl.className = "feedback";
+    }
+
+    function renderNode() {
+      const node = nodes[state.current];
+      nodeTypeEl.textContent = node.type;
+      nodeTitleEl.textContent = node.title;
+      nodeTextEl.textContent = node.text;
+
+      choicesEl.innerHTML = "";
+      hideFeedback();
+      updateStats();
+
+      backBtn.disabled = state.history.length === 0;
+      backBtn.style.opacity = backBtn.disabled ? 0.5 : 1;
+      backBtn.style.cursor = backBtn.disabled ? "not-allowed" : "pointer";
+
+      if (node.ending) {
+        const endingScore = state.score;
+        const rating = endingScore >= 7 ? "Legendary Rescuer" : endingScore >= 3 ? "Solid Responder" : "Needs More Drills";
+        showFeedback(`Final Rating: ${rating}. Score ${endingScore}. Restart to try a different path and improve your Git incident playbook.`, endingScore >= 3 ? "good" : "warn");
+        return;
+      }
+
+      node.choices.forEach((choice, index) => {
+        const btn = document.createElement("button");
+        btn.className = "choice";
+        btn.type = "button";
+        btn.textContent = `${index + 1}. ${choice.text}`;
+        btn.addEventListener("click", () => selectChoice(choice));
+        choicesEl.appendChild(btn);
+      });
+    }
+
+    function selectChoice(choice) {
+      state.history.push({
+        current: state.current,
+        score: state.score,
+        step: state.step,
+        rescues: state.rescues
+      });
+      state.score += choice.score || 0;
+      if (choice.rescue) state.rescues += 1;
+      state.current = choice.to;
+      state.step += 1;
+      renderNode();
+      showFeedback(choice.feedback, choice.tone || "warn");
+    }
+
+    function undoChoice() {
+      if (state.history.length === 0) return;
+      const prev = state.history.pop();
+      state.current = prev.current;
+      state.score = prev.score;
+      state.step = prev.step;
+      state.rescues = prev.rescues;
+      renderNode();
+      showFeedback("Reverted to previous decision point.", "warn");
+    }
+
+    function restartGame() {
+      state.current = "start";
+      state.score = 0;
+      state.step = 1;
+      state.rescues = 0;
+      state.history = [];
+      renderNode();
+      showFeedback("Quest restarted. Investigate first, then act.", "good");
+    }
+
+    backBtn.addEventListener("click", undoChoice);
+    restartBtn.addEventListener("click", restartGame);
+
+    renderNode();
+  </script>
+</body>
+</html>
